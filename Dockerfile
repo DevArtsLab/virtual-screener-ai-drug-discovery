@@ -10,7 +10,7 @@ ENV VITE_API_URL=/api
 RUN npm run build
 
 # ── Stage 2: Python backend + serve built frontend as static files ─────────────
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
