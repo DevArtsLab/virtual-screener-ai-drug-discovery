@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from app.core.config import settings
-from app.routers import jobs, molecules, screening
+from app.routers import jobs, molecules, sample, screening
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(screening.router, prefix=settings.api_prefix)
 app.include_router(jobs.router, prefix=settings.api_prefix)
 app.include_router(molecules.router, prefix=settings.api_prefix)
+app.include_router(sample.router, prefix=settings.api_prefix)
 
 
 @app.get("/health", tags=["health"])

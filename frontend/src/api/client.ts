@@ -28,13 +28,7 @@ export interface MoleculeResult {
   filter_reason: string | null;
 }
 
-export type JobStatus =
-  | "queued"
-  | "tier1"
-  | "tier2"
-  | "tier3"
-  | "done"
-  | "error";
+export type JobStatus = "queued" | "tier1" | "tier2" | "tier3" | "done" | "error";
 
 export interface JobResponse {
   job_id: string;
@@ -72,13 +66,20 @@ export const api = {
   async submitScreening(
     proteinFile: File,
     libraryFile: File,
-    topK: number
+    topK: number,
   ): Promise<JobResponse> {
     const form = new FormData();
     form.append("protein_file", proteinFile);
     form.append("library_file", libraryFile);
     form.append("top_k", String(topK));
     const res = await fetch(`${BASE}/screen`, { method: "POST", body: form });
+    return handleResponse<JobResponse>(res);
+  },
+
+  async runSampleScreening(topK: number): Promise<JobResponse> {
+    const res = await fetch(`${BASE}/sample/screen?top_k=${topK}`, {
+      method: "POST",
+    });
     return handleResponse<JobResponse>(res);
   },
 
@@ -93,7 +94,7 @@ export const api = {
     pageSize = 50,
     onlyPassed = true,
     sortBy = "rank",
-    sortAsc = true
+    sortAsc = true,
   ): Promise<ScreeningResults> {
     const params = new URLSearchParams({
       page: String(page),

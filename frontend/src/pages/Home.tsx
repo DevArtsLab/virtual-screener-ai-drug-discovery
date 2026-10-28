@@ -21,6 +21,18 @@ export function HomePage() {
     }
   }
 
+  async function handleSample() {
+    setLoading(true);
+    setError(null);
+    try {
+      const job = await api.runSampleScreening(5);
+      navigate(`/results/${job.job_id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Demo run failed");
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {/* Hero */}
@@ -40,8 +52,8 @@ export function HomePage() {
             </span>
           </h1>
           <p className="text-slate-400 max-w-2xl mx-auto text-base leading-relaxed">
-            Upload a protein target and compound library. Our 3-tier ML + physics pipeline
-            predicts binding affinities using{" "}
+            Upload a protein target and compound library. Our 3-tier ML + physics
+            pipeline predicts binding affinities using{" "}
             <span className="text-blue-300">Chemprop D-MPNN</span>,{" "}
             <span className="text-purple-300">DeepChem AttentiveFP</span>, and{" "}
             <span className="text-teal-300">AutoDock Vina</span>.
@@ -78,10 +90,7 @@ export function HomePage() {
               color: "border-teal-800/50 bg-teal-950/20",
             },
           ].map((t) => (
-            <div
-              key={t.tier}
-              className={`rounded-xl border p-5 space-y-2 ${t.color}`}
-            >
+            <div key={t.tier} className={`rounded-xl border p-5 space-y-2 ${t.color}`}>
               <div className="flex items-center gap-2">
                 {t.icon}
                 <div>
@@ -99,9 +108,12 @@ export function HomePage() {
 
         {/* Upload form */}
         <div className="rounded-2xl border border-slate-700 bg-slate-900/60 p-8 space-y-2">
-          <h2 className="text-lg font-semibold text-slate-100">Start a Screening Run</h2>
+          <h2 className="text-lg font-semibold text-slate-100">
+            Start a Screening Run
+          </h2>
           <p className="text-sm text-slate-500 mb-4">
-            Supports PDB proteins · SMILES (.smi / .txt / .csv) or SDF compound libraries
+            Supports PDB proteins · SMILES (.smi / .txt / .csv) or SDF compound
+            libraries
           </p>
           <UploadForm onSubmit={handleSubmit} loading={loading} />
           {error && (
@@ -111,16 +123,36 @@ export function HomePage() {
           )}
         </div>
 
+        {/* Demo dataset */}
+        <div className="rounded-xl border border-purple-800/50 bg-purple-950/20 p-5 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-purple-200 mb-1">
+              No files handy? Try the built-in demo
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Runs the full 3-tier pipeline on HIV-1 protease (PDB 1HSG) against a
+              12-compound drug library, docking the top 5 with AutoDock Vina.
+            </p>
+          </div>
+          <button
+            onClick={handleSample}
+            disabled={loading}
+            className="shrink-0 px-5 py-2.5 rounded-xl font-semibold text-sm bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/40 transition-all disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed"
+          >
+            {loading ? "Starting…" : "Run demo dataset"}
+          </button>
+        </div>
+
         {/* Example inputs note */}
         <div className="rounded-xl border border-slate-800 bg-slate-900/30 p-5">
           <h3 className="text-sm font-semibold text-slate-300 mb-2">Quick start</h3>
           <p className="text-xs text-slate-500 leading-relaxed">
             Download example files from the{" "}
-            <span className="text-blue-400">RCSB PDB</span> (any <code className="text-slate-300">.pdb</code> file)
-            and a SMILES library from{" "}
+            <span className="text-blue-400">RCSB PDB</span> (any{" "}
+            <code className="text-slate-300">.pdb</code> file) and a SMILES library from{" "}
             <span className="text-blue-400">ChEMBL</span> or{" "}
-            <span className="text-blue-400">ZINC</span>.
-            The SMILES file should have one molecule per line: <code className="text-slate-300">SMILES name</code>.
+            <span className="text-blue-400">ZINC</span>. The SMILES file should have one
+            molecule per line: <code className="text-slate-300">SMILES name</code>.
           </p>
         </div>
       </div>
