@@ -14,8 +14,13 @@ rdkit>=2026.3
 chemprop==2.3.1
 deepchem==2.8.0
 
-# Deep learning backend
-torch==2.15.0
+# Deep learning backend — CPU-only wheels (cuts ~4-5GB of CUDA deps the app never uses)
+--extra-index-url https://download.pytorch.org/whl/cpu
+# trusted-host: corp TLS-inspecting proxies (e.g. Cloudflare Gateway) re-sign this
+# index and break pip's CA check; harmless when no inspection is present.
+--trusted-host download.pytorch.org
+--trusted-host download-r2.pytorch.org
+torch==2.15.0+cpu
 torchvision==0.29.2
 
 # Protein structure
