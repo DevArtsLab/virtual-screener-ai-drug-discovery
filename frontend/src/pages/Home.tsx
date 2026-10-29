@@ -130,8 +130,9 @@ export function HomePage() {
               No files handy? Try the built-in demo
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Instantly shows results of the full 3-tier pipeline on the bundled demo
-              dataset, with top hits docked by AutoDock Vina.
+              Instantly shows results of the full 3-tier pipeline on KEAP1 (PDB 4L7B) —
+              your cells' antioxidant-defense switch — against a 12-compound library of
+              dietary NRF2 activators, with top hits docked by AutoDock Vina.
             </p>
           </div>
           <button

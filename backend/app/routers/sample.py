@@ -30,7 +30,7 @@ async def sample_info() -> dict:
         if line.strip() and not line.startswith("#")
     )
     return {
-        "protein": "Bundled demo protein target",
+        "protein": "KEAP1 Kelch domain (PDB 4L7B) — the sensor that switches on your cells' own antioxidant defenses",
         "protein_file": "sample_protein.pdb",
         "library_file": "sample_library.smi",
         "compounds": compounds,

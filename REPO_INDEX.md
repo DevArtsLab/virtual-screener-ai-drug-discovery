@@ -30,5 +30,6 @@ Clean rebuild on new pins: `/health` 200, `/docs` 200, SPA 200,
 `POST /api/sample/screen` → job done, top-K docked with real Vina scores
 (Playwright E2E: demo button → results table + 3D poses + CSV export).
 Upload caps enforced: 413 on >25 MB protein / >50 MB library.
-Sample target: pending re-selection (previous bundled dataset removed).
+Sample target: KEAP1 Kelch domain (PDB 4L7B, bound inhibitor) vs 12 dietary
+NRF2 activators — wellness-themed demo, bound ligand gives real pocket detection.
 Note: job store is in-memory — container restart wipes all results.

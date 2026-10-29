@@ -23,8 +23,11 @@ binding-affinity predictions via a 3-tier ML + physics pipeline.
 ## Try it without files
 
 The Home page has a **Run demo dataset** button: it instantly shows the results
-of the full pipeline on the bundled demo dataset and lands on the same results
-view as a real upload. Results are precomputed
+of the full pipeline on a bundled sample — KEAP1 Kelch domain (PDB 4L7B), the
+sensor that switches on cellular antioxidant defenses, vs a 12-compound library
+of dietary NRF2 activators (sulforaphane, resveratrol, curcumin, EGCG, and
+friends) — and lands on the same results view as a real upload. Results are
+precomputed
 (`backend/app/sample_data/sample_results.json`) so the demo costs zero compute;
 if that file is removed, `POST /api/sample/screen` falls back to running the
 live pipeline. API: `GET /api/sample` (metadata), `POST /api/sample/screen`.
