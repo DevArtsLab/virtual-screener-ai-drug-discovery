@@ -125,6 +125,39 @@ npm install
 npm run dev   # Vite dev server
 ```
 
+## Operations
+
+```bash
+# Stack control (run from repo root)
+docker compose ps                  # what's running
+docker compose stop frontend       # stop one service
+docker compose start frontend
+docker compose restart backend
+docker compose logs -f backend     # tail logs
+docker compose down                # tear down whole stack
+docker compose up -d --build       # rebuild + start
+
+# UI iteration without Docker rebuilds
+cd frontend && npm run dev         # http://localhost:5173, hot reload,
+                                   # /api proxies to the dockerized backend
+
+# Disk cleanup
+docker builder prune -af           # drop build cache (safe, slow next build)
+docker image prune -a              # drop unused tagged images
+
+# Offline backup / restore
+docker save virtual-screener-ai-drug-discovery-backend \
+  virtual-screener-ai-drug-discovery-frontend | gzip > virtualscreener-images.tar.gz
+gunzip -c virtualscreener-images.tar.gz | docker load
+```
+
+Runtime needs no network. Rebuilds pull from Docker Hub, Debian mirrors, and
+PyPI; the image tarball + repo is a fully offline restore path.
+
+Env knobs (backend): `MAX_JOBS`, `JOB_TTL_HOURS`, `RATE_LIMIT_JOBS`,
+`RATE_LIMIT_WINDOW_SECONDS`, `MAX_CONCURRENT_JOBS_PER_IP`, `MAX_MOLECULES`,
+`MAX_PROTEIN_BYTES`, `MAX_LIBRARY_BYTES`, `VINA_EXHAUSTIVENESS`, `VINA_TOP_K`.
+
 ## Deployment notes
 
 - **HF Spaces:** push `main` to the Space remote; the root Dockerfile rebuilds.
