@@ -20,10 +20,14 @@ binding-affinity predictions via a 3-tier ML + physics pipeline.
 
 ## Live deployment
 
-- **Hugging Face Spaces:** https://devartslab-virtualscreener.hf.space
-  (Docker SDK, `devartslab/virtualscreener`). Free tier hibernates after ~48h idle;
+- **Hugging Face Spaces:** https://amirolyaei-virtualscreener.hf.space
+  (Docker SDK, `amirolyaei/virtualscreener`). Free tier hibernates after ~48h idle;
   first request wakes it (~1-2 min cold start).
-- **Railway:** project `keen-adventure` (backend deploy). Status: dashboard check pending.
+- Moving the Space under the `devartslab` org is blocked: HF requires a
+  Team/Enterprise plan for orgs to run Docker Spaces.
+- **Railway:** project `keen-adventure` (backend deploy). Trial expired —
+  deploy blocked pending a paid plan; would also need `HF_STATIC=1` to serve
+  the SPA plus the public domain pointed at port 8000.
 
 ## Try it without files
 
@@ -70,16 +74,14 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O ibuprofen
 
 ## Model checkpoints
 
-- **Chemprop D-MPNN:** `backend/models/chemprop_bindingdb.pt` ships in the
-  repo — a real MPNN trained on ~1.5k ChEMBL binding activities (val_loss
-  0.57). Retrain your own with `chemprop train -i data.csv -s smiles
---target-columns pic50` and drop the result at the same path.
-- **DeepChem AttentiveFP:** checkpoints are loaded from
-  `backend/models/attentivefp/` when present; otherwise tier 2 scores on
-  Chemprop alone plus a fingerprint-similarity heuristic fallback.
-- Deploy note: `backend/.dockerignore` excludes `models/` from image
-  context — mount the dir as a volume (compose does) or remove the rule to
-  bake checkpoints into the image.
+- **Chemprop D-MPNN:** `backend/models/chemprop_bindingdb.pt` — a real MPNN
+  trained on ~1.5k ChEMBL binding activities (val_loss 0.57). Gitignored on
+  GitHub; deployed to the HF Space via git-LFS. Mount `backend/models/` as a
+  volume locally (compose does) — without it tier 2 falls back to the
+  fingerprint heuristic. Retrain: `chemprop train -i data.csv -s smiles
+--target-columns pic50`.
+- **DeepChem AttentiveFP:** checkpoints load from
+  `backend/models/attentivefp/` when present.
 
 ## Stack
 
@@ -165,7 +167,10 @@ Env knobs (backend): `MAX_JOBS`, `JOB_TTL_HOURS`, `RATE_LIMIT_JOBS`,
 
 ## Deployment notes
 
-- **HF Spaces:** push `main` to the Space remote; the root Dockerfile rebuilds.
+- **HF Spaces:** root Dockerfile rebuilds on push to `main` of
+  `hf.co/spaces/amirolyaei/virtualscreener`. Fine-grained tokens may lack git
+  push scope — the REST commit API
+  (`POST /api/spaces/{id}/commit/main`, binaries via git-LFS) works instead.
 - **Railway:** deploy from the repo Dockerfile or `backend/Dockerfile`. Railway
   supports always-on services (no execution ceiling; 15-min per-request cap,
   fine here since jobs are async-polled), persistent volumes, managed
