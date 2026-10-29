@@ -10,14 +10,24 @@ pinned: false
 
 # VirtualScreener — AI Drug Discovery Platform
 
-AI-powered virtual screening: upload a protein PDB + compound library → ranked binding affinity predictions via a 3-tier ML + physics pipeline.
+AI-powered virtual screening: upload a protein PDB + compound library → ranked
+binding-affinity predictions via a 3-tier ML + physics pipeline.
 
-## Screenshots
+## Live deployment
 
-![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.08%E2%80%AFPM.png)
-![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.24%E2%80%AFPM.png)
+- **Hugging Face Spaces:** https://devartslab-virtualscreener.hf.space
+  (Docker SDK, `devartslab/virtualscreener`). Free tier hibernates after ~48h idle;
+  first request wakes it (~1-2 min cold start).
+- **Railway:** project `keen-adventure` (backend deploy). Status: dashboard check pending.
 
----
+## Try it without files
+
+The Home page has a **Run demo dataset** button: it instantly shows the results
+of the full pipeline on the bundled demo dataset and lands on the same results
+view as a real upload. Results are precomputed
+(`backend/app/sample_data/sample_results.json`) so the demo costs zero compute;
+if that file is removed, `POST /api/sample/screen` falls back to running the
+live pipeline. API: `GET /api/sample` (metadata), `POST /api/sample/screen`.
 
 ## Pipeline
 
@@ -27,34 +37,71 @@ AI-powered virtual screening: upload a protein PDB + compound library → ranked
 | **2** | Chemprop D-MPNN + DeepChem AttentiveFP | ML binding affinity (pIC50), MC-Dropout uncertainty |
 | **3** | AutoDock Vina                          | Physics-based docking, 3D pose generation           |
 
----
+ML checkpoints are optional: without `models/chemprop_bindingdb.pt` and
+`models/attentivefp/`, tier 2 falls back to a fingerprint-similarity heuristic
+and tier 3 still runs real Vina docking.
 
-## Quick Start (Docker)
+## Input formats
+
+| File             | Format                   | Notes                            |
+| ---------------- | ------------------------ | -------------------------------- |
+| Protein          | `.pdb`                   | From RCSB or AlphaFold           |
+| Compound library | `.smi` / `.txt` / `.csv` | One `SMILES name` per line       |
+| Compound library | `.sdf`                   | Standard SDF with molecule names |
+
+Upload caps: 25 MB protein, 50 MB library, 5,000 molecules per job
+(`MAX_*` env vars in `app/core/config.py`).
+
+Example `library.smi`:
+
+```
+CC(=O)Oc1ccccc1C(=O)O aspirin
+CN1C=NC2=C1C(=O)N(C(=O)N2C)C caffeine
+CC(C)Cc1ccc(cc1)C(C)C(=O)O ibuprofen
+```
+
+## Model checkpoints
+
+- **Chemprop D-MPNN:** train your own with
+  `chemprop train --data_path your_data.csv --smiles_column smiles
+--target_columns pic50`, then drop the checkpoint at
+  `backend/models/chemprop_bindingdb.pt`.
+- **DeepChem AttentiveFP:** checkpoints are loaded from
+  `backend/models/attentivefp/` when present.
+
+## Stack
+
+- **Backend:** FastAPI on Python 3.11 (DeepChem caps the stack at 3.11).
+  Latest-stable pins — fastapi 0.162, chemprop 2.3.1, deepchem 2.8.0,
+  rdkit 2026.03.x, meeko 0.8 + gemmi, scipy 1.17.1.
+- **Compute:** `torch 2.15.0+cpu` / `torchvision` — CPU-only wheels via
+  `download.pytorch.org/whl/cpu`; the image does not ship multi-GB CUDA deps.
+- **Docking:** system `autodock-vina` binary + `openbabel` (apt), `meeko` ligand prep.
+- **Frontend:** React 19 + Vite + Tailwind, NGL 3D viewer, nginx static serving.
+- **Jobs:** async in-memory job store — `POST /api/screen` returns 202 + job_id,
+  poll `GET /api/jobs/{id}`; results via `GET /api/molecules/{id}`, pose +
+  CSV export endpoints.
+
+## Quick start (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-- Frontend: http://localhost:3000
-- Backend API docs: http://localhost:8000/docs
+- Frontend: http://localhost:3000 · Backend API docs: http://localhost:8000/docs
 
----
+The root `Dockerfile` is the Hugging Face Spaces build (frontend built in-image,
+FastAPI serves the SPA on :8000); `docker-compose.yml` runs the split
+backend+frontend dev stack.
 
-## Local Development
+## Local development
 
 ### Backend
 
 ```bash
 cd backend
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
-# Run the API server
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -63,98 +110,29 @@ uvicorn app.main:app --reload --port 8000
 ```bash
 cd frontend
 npm install
-npm run dev
-# → http://localhost:5173
+npm run dev   # Vite dev server
 ```
 
----
+## Deployment notes
 
-## Input Formats
+- **HF Spaces:** push `main` to the Space remote; the root Dockerfile rebuilds.
+- **Railway:** deploy from the repo Dockerfile or `backend/Dockerfile`. Railway
+  supports always-on services (no execution ceiling; 15-min per-request cap,
+  fine here since jobs are async-polled), persistent volumes, managed
+  PostgreSQL/MySQL/Redis, and `railway ssh` container access.
 
-| File             | Format                   | Notes                                      |
-| ---------------- | ------------------------ | ------------------------------------------ |
-| Protein          | `.pdb`                   | Standard PDB format from RCSB or AlphaFold |
-| Compound library | `.smi` / `.txt` / `.csv` | One SMILES per line: `SMILES name`         |
-| Compound library | `.sdf`                   | Standard SDF with molecule names           |
+## Screenshots
 
-### Example SMILES file (`library.smi`)
+![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.08%E2%80%AFPM.png)
+![Demo dataset flow](docs/screenshots/Screenshot%202026-05-08%20at%203.31.24%E2%80%AFPM.png)
 
-```
-CC(=O)Oc1ccccc1C(=O)O Aspirin
-CC12CCC3C(C1CCC2O)CCC4=CC(=O)CCC34C Testosterone
-CN1C=NC2=C1C(=O)N(C(=O)N2C)C Caffeine
-```
-
----
-
-## API Endpoints
-
-| Method | Endpoint                                | Description                                                     |
-| ------ | --------------------------------------- | --------------------------------------------------------------- |
-| `POST` | `/api/screen`                           | Submit job (multipart: `protein_file`, `library_file`, `top_k`) |
-| `GET`  | `/api/jobs/{job_id}`                    | Poll status & progress                                          |
-| `GET`  | `/api/molecules/{job_id}`               | Paginated results                                               |
-| `GET`  | `/api/molecules/{job_id}/{mol_id}/pose` | Docking pose PDB                                                |
-| `GET`  | `/api/molecules/{job_id}/export/csv`    | Download CSV                                                    |
-
----
-
-## ML Models
-
-### Chemprop D-MPNN
-
-- Place a pre-trained checkpoint at `backend/models/chemprop_bindingdb.pt`
-- If absent, the app runs in **demo mode** with a fingerprint-similarity heuristic
-- Train your own: `chemprop train --data_path your_data.csv --smiles_column smiles --target_columns pic50`
-
-### DeepChem AttentiveFP
-
-- Checkpoint auto-saved to `backend/models/attentivefp/`
-- Falls back to heuristic if no checkpoint found
-
-### AutoDock Vina
-
-- Installed as a system binary via `apt install autodock-vina` (no source compilation)
-- Requires `obabel` (Open Babel) for PDBQT conversion
-- Falls back to a physics-inspired heuristic score if binary is unavailable
-
----
-
-## Project Structure
+## Repo layout
 
 ```
-virtualscreener/
-├── backend/
-│   ├── app/
-│   │   ├── main.py               FastAPI entry point
-│   │   ├── core/
-│   │   │   ├── config.py         Settings (Pydantic)
-│   │   │   └── job_store.py      In-memory async job store
-│   │   ├── routers/
-│   │   │   ├── screening.py      POST /api/screen
-│   │   │   ├── jobs.py           GET /api/jobs/{id}
-│   │   │   └── molecules.py      GET /api/molecules/{id}
-│   │   ├── services/
-│   │   │   ├── pipeline.py       3-tier orchestrator
-│   │   │   ├── molecular_proc.py RDKit processing (Tier 1)
-│   │   │   ├── protein_proc.py   BioPython PDB parser
-│   │   │   ├── ml_scoring.py     Chemprop + DeepChem ensemble (Tier 2)
-│   │   │   └── docking.py        AutoDock Vina (Tier 3)
-│   │   └── schemas/models.py     Pydantic schemas
-│   ├── models/                   ML checkpoints
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── api/client.ts         Typed API client
-│       ├── components/
-│       │   ├── UploadZone.tsx    Drag-drop file upload
-│       │   ├── ProgressTracker.tsx Live pipeline progress
-│       │   ├── ResultsTable.tsx  Sortable results table
-│       │   ├── MolCard.tsx       Molecule detail card
-│       │   ├── MolViewer.tsx     NGL 3D docking pose viewer
-│       │   └── DruglikenessRadar.tsx Recharts radar chart
-│       └── pages/
-│           ├── Home.tsx          Upload form
-│           └── Results.tsx       Job status + results
-└── docker-compose.yml
+backend/            FastAPI app (routers, services, pipeline)
+  app/sample_data/  bundled demo dataset (protein + library + precomputed results)
+frontend/           React + Vite + Tailwind SPA
+docs/screenshots/   UI screenshots
+Dockerfile          HF Spaces all-in-one image
+docker-compose.yml  local two-service dev stack
 ```

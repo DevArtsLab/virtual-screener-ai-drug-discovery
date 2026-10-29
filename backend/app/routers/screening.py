@@ -53,6 +53,16 @@ async def submit_screening_job(
         raise HTTPException(status_code=400, detail="Protein file is empty")
     if len(library_bytes) == 0:
         raise HTTPException(status_code=400, detail="Library file is empty")
+    if len(protein_bytes) > settings.max_protein_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Protein file exceeds {settings.max_protein_bytes // (1024 * 1024)} MB limit",
+        )
+    if len(library_bytes) > settings.max_library_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Library file exceeds {settings.max_library_bytes // (1024 * 1024)} MB limit",
+        )
 
     job_id = await job_store.create(pdb_name, lib_name, top_k)
 

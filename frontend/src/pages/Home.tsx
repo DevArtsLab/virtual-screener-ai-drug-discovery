@@ -130,8 +130,8 @@ export function HomePage() {
               No files handy? Try the built-in demo
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Runs the full 3-tier pipeline on HIV-1 protease (PDB 1HSG) against a
-              12-compound drug library, docking the top 5 with AutoDock Vina.
+              Instantly shows results of the full 3-tier pipeline on the bundled demo
+              dataset, with top hits docked by AutoDock Vina.
             </p>
           </div>
           <button

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     vina_n_poses: int = 5
     vina_top_k: int = 10  # only dock top-K from ML tier
 
+    # Upload limits (bytes)
+    max_protein_bytes: int = 25 * 1024 * 1024
+    max_library_bytes: int = 50 * 1024 * 1024
+
     # Pipeline
     max_molecules: int = 5000
     tier3_top_k: int = 10

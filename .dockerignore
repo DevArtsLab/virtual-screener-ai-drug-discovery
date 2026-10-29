@@ -1,0 +1,19 @@
+.git
+.DS_Store
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/*.egg-info/
+
+# Frontend build context must not ship host artifacts:
+# local node_modules (wrong platform/arch for the linux image)
+# would overwrite the clean `npm ci` output inside the builder stage.
+frontend/node_modules/
+frontend/dist/
+
+# Runtime artifacts / heavy optional files
+backend/uploads/
+backend/models/
+docs/
+*.log
