@@ -45,4 +45,4 @@ models/uploads/data volumes actually mount (previously `/models` etc.).
 Deployed to HF via REST commit API + git-LFS (commit `13c91cc`); fine-grained
 tokens cannot `git push`. Sample endpoint serves precomputed results
 (`sample_results.json`) instantly — 202 in ~0.2s verified on HF.
-Offline image backup: `~/virtualscreener-images.tar.gz` (646MB, `docker load`).
+Offline image backup: `~/projects/backups/virtual-screener-ai-drug-discovery/virtualscreener-images.tar.gz` (646MB, `docker load`).
