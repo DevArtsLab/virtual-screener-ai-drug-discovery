@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     # Paths
-    base_dir: Path = Path(__file__).resolve().parents[3]
+    base_dir: Path = Path(__file__).resolve().parents[2]
     models_dir: Path = base_dir / "models"
     uploads_dir: Path = base_dir / "uploads"
 
@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     # Pipeline
     max_molecules: int = 5000
     tier3_top_k: int = 10
+
+    # Job persistence / bounds
+    db_path: Path = base_dir / "data" / "jobs.db"
+    max_jobs: int = 100
+    job_ttl_hours: int = 24
+
+    # Per-IP rate limit for compute endpoints (POST /screen, /sample/screen)
+    rate_limit_jobs: int = 10
+    rate_limit_window_seconds: int = 60
+    # Per-IP cap on simultaneously active jobs (queued/running)
+    max_concurrent_jobs_per_ip: int = 2
 
     # DeepChem model dir
     deepchem_model_dir: Path = base_dir / "models" / "attentivefp"

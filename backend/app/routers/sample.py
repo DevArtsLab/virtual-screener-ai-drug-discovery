@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 
 from app.core.job_store import job_store
 from app.schemas.models import JobResponse, JobStatus, MoleculeResult
@@ -40,7 +40,7 @@ async def sample_info() -> dict:
 
 @router.post("/screen", response_model=JobResponse, status_code=202)
 async def run_sample_screening(
-    background_tasks: BackgroundTasks, top_k: int = 5
+    background_tasks: BackgroundTasks, request: Request, top_k: int = 5
 ) -> JobResponse:
     """
     Serve the demo screening. If sample_results.json is bundled, returns the
@@ -50,12 +50,16 @@ async def run_sample_screening(
     if not _PROTEIN.exists() or not _LIBRARY.exists():
         raise HTTPException(status_code=500, detail="Sample dataset not bundled")
 
+    client_ip = request.client.host if request.client else "unknown"
+
     if _PRECOMPUTED.exists():
         global _sample_job_id
         if _sample_job_id is None or await job_store.get(_sample_job_id) is None:
             payload = json.loads(_PRECOMPUTED.read_text())
             results = [MoleculeResult(**m) for m in payload["results"]]
-            job_id = await job_store.create(_PROTEIN.name, _LIBRARY.name, top_k)
+            job_id = await job_store.create(
+                _PROTEIN.name, _LIBRARY.name, top_k, client_ip
+            )
             await job_store.update(
                 job_id,
                 status=JobStatus.done,
@@ -73,7 +77,7 @@ async def run_sample_screening(
     protein_bytes = _PROTEIN.read_bytes()
     library_bytes = _LIBRARY.read_bytes()
 
-    job_id = await job_store.create(_PROTEIN.name, _LIBRARY.name, top_k)
+    job_id = await job_store.create(_PROTEIN.name, _LIBRARY.name, top_k, client_ip)
     background_tasks.add_task(
         run_screening_pipeline,
         job_id=job_id,

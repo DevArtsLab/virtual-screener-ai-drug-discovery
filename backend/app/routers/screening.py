@@ -4,7 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 
 from app.core.config import settings
 from app.core.job_store import job_store
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/screen", tags=["screening"])
 @router.post("", response_model=JobResponse, status_code=202)
 async def submit_screening_job(
     background_tasks: BackgroundTasks,
+    request: Request,
     protein_file: UploadFile = File(..., description="Protein structure in PDB format"),
     library_file: UploadFile = File(
         ..., description="Compound library as SMILES (.smi/.txt) or SDF (.sdf)"
@@ -64,7 +65,19 @@ async def submit_screening_job(
             detail=f"Library file exceeds {settings.max_library_bytes // (1024 * 1024)} MB limit",
         )
 
-    job_id = await job_store.create(pdb_name, lib_name, top_k)
+    client_ip = request.client.host if request.client else "unknown"
+    active = await job_store.count_active(client_ip)
+    if active >= settings.max_concurrent_jobs_per_ip:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Too many active jobs: max "
+                f"{settings.max_concurrent_jobs_per_ip} per IP. "
+                "Wait for a running job to finish."
+            ),
+        )
+
+    job_id = await job_store.create(pdb_name, lib_name, top_k, client_ip)
 
     background_tasks.add_task(
         run_screening_pipeline,

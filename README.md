@@ -65,12 +65,16 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O ibuprofen
 
 ## Model checkpoints
 
-- **Chemprop D-MPNN:** train your own with
-  `chemprop train --data_path your_data.csv --smiles_column smiles
---target_columns pic50`, then drop the checkpoint at
-  `backend/models/chemprop_bindingdb.pt`.
+- **Chemprop D-MPNN:** `backend/models/chemprop_bindingdb.pt` ships in the
+  repo — a real MPNN trained on ~1.5k ChEMBL binding activities (val_loss
+  0.57). Retrain your own with `chemprop train -i data.csv -s smiles
+--target-columns pic50` and drop the result at the same path.
 - **DeepChem AttentiveFP:** checkpoints are loaded from
-  `backend/models/attentivefp/` when present.
+  `backend/models/attentivefp/` when present; otherwise tier 2 scores on
+  Chemprop alone plus a fingerprint-similarity heuristic fallback.
+- Deploy note: `backend/.dockerignore` excludes `models/` from image
+  context — mount the dir as a volume (compose does) or remove the rule to
+  bake checkpoints into the image.
 
 ## Stack
 
@@ -81,9 +85,14 @@ CC(C)Cc1ccc(cc1)C(C)C(=O)O ibuprofen
   `download.pytorch.org/whl/cpu`; the image does not ship multi-GB CUDA deps.
 - **Docking:** system `autodock-vina` binary + `openbabel` (apt), `meeko` ligand prep.
 - **Frontend:** React 19 + Vite + Tailwind, NGL 3D viewer, nginx static serving.
-- **Jobs:** async in-memory job store — `POST /api/screen` returns 202 + job_id,
-  poll `GET /api/jobs/{id}`; results via `GET /api/molecules/{id}`, pose +
-  CSV export endpoints.
+- **Jobs:** async job store persisted to SQLite (`backend/data/jobs.db`, volume-
+  mounted in compose) — `POST /api/screen` returns 202 + job_id, poll
+  `GET /api/jobs/{id}`; results via `GET /api/molecules/{id}`, pose + CSV
+  export endpoints. Jobs survive restarts; bounded at 100 jobs / 24 h TTL.
+- **Rate limit:** compute endpoints (`POST /screen`, `POST /sample/screen`)
+  are capped at 10 jobs/minute per IP (429 + `Retry-After`), and each IP may
+  hold at most 2 simultaneously active jobs (`MAX_CONCURRENT_JOBS_PER_IP`).
+  Upload caps (25 MB protein, 50 MB library, 5,000 molecules) still apply.
 
 ## Quick start (Docker)
 
@@ -128,6 +137,7 @@ npm run dev   # Vite dev server
 
 ![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.08%E2%80%AFPM.png)
 ![Demo dataset flow](docs/screenshots/Screenshot%202026-05-08%20at%203.31.24%E2%80%AFPM.png)
+![Results](docs/screenshots/Screenshot%202026-10-29%20at%2012.59.59%E2%80%AFAM.png)
 
 ## Repo layout
 

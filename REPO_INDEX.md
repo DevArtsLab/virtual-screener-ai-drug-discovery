@@ -32,4 +32,10 @@ Clean rebuild on new pins: `/health` 200, `/docs` 200, SPA 200,
 Upload caps enforced: 413 on >25 MB protein / >50 MB library.
 Sample target: KEAP1 Kelch domain (PDB 4L7B, bound inhibitor) vs 12 dietary
 NRF2 activators — wellness-themed demo, bound ligand gives real pocket detection.
-Note: job store is in-memory — container restart wipes all results.
+Job store: SQLite-backed (`backend/data/jobs.db`), survives restarts;
+bounded at 100 jobs / 24 h TTL. Compute POSTs rate-limited 10/min per IP +
+max 2 concurrent active jobs per IP (429 on third).
+Tier 2: real Chemprop checkpoint at `backend/models/chemprop_bindingdb.pt`
+(ChEMBL-trained, val_loss 0.57); DeepChem still heuristic fallback.
+Fixed `base_dir` off-by-one: paths now resolve under backend root, so
+models/uploads/data volumes actually mount (previously `/models` etc.).

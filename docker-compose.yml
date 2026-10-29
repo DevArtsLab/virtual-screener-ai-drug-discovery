@@ -9,6 +9,7 @@ services:
     volumes:
       - ./backend/models:/app/models
       - ./backend/uploads:/app/uploads
+      - ./backend/data:/app/data
     environment:
       - VINA_EXHAUSTIVENESS=16
       - VINA_TOP_K=10
