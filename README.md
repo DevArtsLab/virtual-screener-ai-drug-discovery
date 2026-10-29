@@ -13,6 +13,11 @@ pinned: false
 AI-powered virtual screening: upload a protein PDB + compound library → ranked
 binding-affinity predictions via a 3-tier ML + physics pipeline.
 
+## Screenshots
+
+![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.08%E2%80%AFPM.png)
+![Results](docs/screenshots/Screenshot%202026-10-29%20at%2012.59.59%E2%80%AFAM.png)
+
 ## Live deployment
 
 - **Hugging Face Spaces:** https://devartslab-virtualscreener.hf.space
@@ -165,12 +170,6 @@ Env knobs (backend): `MAX_JOBS`, `JOB_TTL_HOURS`, `RATE_LIMIT_JOBS`,
   supports always-on services (no execution ceiling; 15-min per-request cap,
   fine here since jobs are async-polled), persistent volumes, managed
   PostgreSQL/MySQL/Redis, and `railway ssh` container access.
-
-## Screenshots
-
-![Home](docs/screenshots/Screenshot%202026-05-08%20at%203.31.08%E2%80%AFPM.png)
-![Demo dataset flow](docs/screenshots/Screenshot%202026-05-08%20at%203.31.24%E2%80%AFPM.png)
-![Results](docs/screenshots/Screenshot%202026-10-29%20at%2012.59.59%E2%80%AFAM.png)
 
 ## Repo layout
 
