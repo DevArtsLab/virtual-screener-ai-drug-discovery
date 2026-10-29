@@ -1,4 +1,5 @@
-import { CheckCircle, XCircle, AlertTriangle, Atom } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, XCircle, AlertTriangle, Atom, Copy, Check } from "lucide-react";
 import { cn, fmt, scoreColor, dockingColor } from "../lib/utils";
 import type { MoleculeResult } from "../api/client";
 import { DruglikenessRadar } from "./DruglikenessRadar";
@@ -17,9 +18,7 @@ export function MolCard({ mol, onSelectPose }: MolCardProps) {
           <h3 className="font-semibold text-slate-100 truncate">
             #{mol.rank} {mol.name}
           </h3>
-          <p className="text-[11px] font-mono text-slate-500 truncate mt-0.5">
-            {mol.smiles.length > 60 ? mol.smiles.slice(0, 60) + "…" : mol.smiles}
-          </p>
+          <SmilesRow smiles={mol.smiles} />
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           {mol.lipinski?.passes_ro5 ? (
@@ -39,23 +38,22 @@ export function MolCard({ mol, onSelectPose }: MolCardProps) {
         </div>
       </div>
 
-      {/* 2D Structure */}
-      <div className="flex gap-4 flex-wrap">
+      {/* Body: structure | scores | radar */}
+      <div className="flex flex-col md:flex-row gap-4">
+        {/* 2D Structure */}
         {mol.svg_2d ? (
           <div
-            className="rounded-lg bg-white p-1 flex-shrink-0"
-            style={{ width: 180, height: 120 }}
+            className="rounded-lg bg-white p-1.5 shrink-0 self-start overflow-hidden flex items-center justify-center w-52 h-52 [&>svg]:w-full [&>svg]:h-full"
             dangerouslySetInnerHTML={{ __html: mol.svg_2d }}
           />
         ) : (
-          <div className="flex items-center justify-center rounded-lg bg-slate-700 flex-shrink-0"
-               style={{ width: 180, height: 120 }}>
+          <div className="flex items-center justify-center rounded-lg bg-slate-700 shrink-0 self-start w-52 h-52">
             <Atom className="text-slate-500" size={32} />
           </div>
         )}
 
         {/* Scores */}
-        <div className="flex flex-col gap-2 flex-1 min-w-0">
+        <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
           <ScoreRow
             label="Ensemble Score"
             value={fmt(mol.ensemble_score, 3)}
@@ -77,10 +75,27 @@ export function MolCard({ mol, onSelectPose }: MolCardProps) {
           />
           <ScoreRow
             label="Docking Score"
-            value={mol.docking_score != null ? `${fmt(mol.docking_score, 2)} kcal/mol` : "—"}
+            value={
+              mol.docking_score != null ? `${fmt(mol.docking_score, 2)} kcal/mol` : "—"
+            }
             className={dockingColor(mol.docking_score)}
           />
+          {mol.has_pose && onSelectPose && (
+            <button
+              onClick={onSelectPose}
+              className="mt-auto w-full py-2 rounded-lg bg-blue-600/20 border border-blue-600/50 text-blue-300 text-xs font-semibold hover:bg-blue-600/30 transition-colors"
+            >
+              View 3D Docking Pose
+            </button>
+          )}
         </div>
+
+        {/* Radar chart */}
+        {mol.lipinski && (
+          <div className="w-full md:w-52 shrink-0 rounded-lg bg-slate-800/40 border border-slate-700/50 p-1">
+            <DruglikenessRadar lipinski={mol.lipinski} />
+          </div>
+        )}
       </div>
 
       {/* Lipinski properties grid */}
@@ -101,19 +116,6 @@ export function MolCard({ mol, onSelectPose }: MolCardProps) {
           ))}
         </div>
       )}
-
-      {/* Radar chart */}
-      {mol.lipinski && <DruglikenessRadar lipinski={mol.lipinski} />}
-
-      {/* View 3D pose button */}
-      {mol.has_pose && onSelectPose && (
-        <button
-          onClick={onSelectPose}
-          className="w-full py-2 rounded-lg bg-blue-600/20 border border-blue-600/50 text-blue-300 text-xs font-semibold hover:bg-blue-600/30 transition-colors"
-        >
-          View 3D Docking Pose
-        </button>
-      )}
     </div>
   );
 }
@@ -128,11 +130,41 @@ function ScoreRow({
   className?: string;
 }) {
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-xs text-slate-500">{label}</span>
-      <span className={cn("text-xs font-mono font-bold", className)}>
-        {value}
-      </span>
+    <div className="flex justify-between items-center rounded bg-slate-700/40 px-2.5 py-1.5">
+      <span className="text-xs text-slate-400">{label}</span>
+      <span className={cn("text-xs font-mono font-bold", className)}>{value}</span>
     </div>
+  );
+}
+
+function SmilesRow({ smiles }: { smiles: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(smiles);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — selection still possible */
+    }
+  };
+  return (
+    <button
+      onClick={copy}
+      title="Click to copy SMILES"
+      className="group flex items-center gap-1.5 mt-0.5 max-w-full text-left"
+    >
+      <span className="text-[11px] font-mono text-slate-500 truncate group-hover:text-slate-300 transition-colors">
+        {smiles.length > 60 ? smiles.slice(0, 60) + "…" : smiles}
+      </span>
+      {copied ? (
+        <Check size={11} className="text-emerald-400 shrink-0" />
+      ) : (
+        <Copy
+          size={11}
+          className="text-slate-600 group-hover:text-slate-400 shrink-0 transition-colors"
+        />
+      )}
+    </button>
   );
 }
